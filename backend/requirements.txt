@@ -1,0 +1,11 @@
+fastapi[standard]
+uvicorn[standard]
+sqlalchemy
+python-dotenv
+openai
+langgraph
+langchain-core
+sentence-transformers
+numpy
+python-multipart
+aiosqlite
