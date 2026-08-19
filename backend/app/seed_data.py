@@ -8,7 +8,7 @@ import random
 from datetime import datetime, timedelta
 
 from app.db import SessionLocal, create_tables
-from app.models import Complaint
+from app.models import Complaint, ResolutionStep, ComplaintTimelineEntry
 from app.graph.build_graph import run_complaint_pipeline
 
 
@@ -72,8 +72,10 @@ def seed_database():
     db = SessionLocal()
 
     try:
-        # Clear existing to guarantee a clean, full 22-complaint demo dataset
-        print("Clearing existing complaints database...")
+        # Clear existing tables
+        print("Clearing existing database...")
+        db.query(ComplaintTimelineEntry).delete()
+        db.query(ResolutionStep).delete()
         db.query(Complaint).delete()
         db.commit()
 
@@ -99,7 +101,7 @@ def seed_database():
                     updated_at=created_at + timedelta(hours=random.randint(1, 48)) if status != "new" else created_at,
                     raw_input_type="text",
                     transcript=result["transcript"],
-                    citizen_id=f"CIT-{random.randint(1000, 9999)}",
+                    citizen_id=f"citizen{i+1}@example.com",
                     citizen_location=seed["location"],
                     category=result.get("category"),
                     urgency=result.get("urgency"),
@@ -115,19 +117,79 @@ def seed_database():
                 )
                 db.add(complaint)
                 db.commit()
+                db.refresh(complaint)
 
-                urgency_icon = "🔴" if result.get("urgency") == "emergency" else "🟡" if result.get("urgency") == "high" else "🔵"
+                # Add Resolution Steps
+                steps_data = result.get("resolution_steps") or [
+                    {"step": f"Contact {complaint.department_recommended or 'department'} control room", "owner": "department"},
+                    {"step": f"Dispatch field inspection team to {complaint.citizen_location}", "owner": "department"},
+                    {"step": "Confirm restoration and close complaint", "owner": "officer"},
+                ]
+
+                for s_idx, s in enumerate(steps_data):
+                    step_status = "pending"
+                    completed_at = None
+                    if status == "resolved":
+                        step_status = "done"
+                        completed_at = created_at + timedelta(hours=random.randint(2, 24))
+                    elif status == "in_progress" and s_idx == 0:
+                        step_status = "done"
+                        completed_at = created_at + timedelta(hours=random.randint(1, 10))
+
+                    db.add(ResolutionStep(
+                        complaint_id=complaint.id,
+                        step_text=s.get("step", ""),
+                        owner=s.get("owner", "officer"),
+                        status=step_status,
+                        completed_at=completed_at,
+                    ))
+
+                # Add Timeline Entries
+                initial_ack = result.get("draft_citizen_ack") or (
+                    f"Complaint #{complaint.id} received and routed to {complaint.department_recommended}."
+                )
+                db.add(ComplaintTimelineEntry(
+                    complaint_id=complaint.id,
+                    actor="system",
+                    message=initial_ack,
+                    visible_to_citizen=True,
+                    created_at=created_at,
+                ))
+
+                if status in ["in_progress", "resolved"]:
+                    db.add(ComplaintTimelineEntry(
+                        complaint_id=complaint.id,
+                        actor="officer",
+                        message=f"Investigation initiated. Field crew notified for {complaint.citizen_location}.",
+                        visible_to_citizen=True,
+                        created_at=created_at + timedelta(hours=2),
+                    ))
+
+                if status == "resolved":
+                    db.add(ComplaintTimelineEntry(
+                        complaint_id=complaint.id,
+                        actor="officer",
+                        message=f"Work completed and verified. {complaint.category.capitalize() if complaint.category else 'Issue'} resolved at {complaint.citizen_location}.",
+                        visible_to_citizen=True,
+                        created_at=created_at + timedelta(hours=24),
+                    ))
+
+                db.commit()
+
+                urgency_tag = f"[{result.get('urgency', 'normal').upper()}]"
                 dup_tag = " [DUPLICATE]" if result.get("is_duplicate") else ""
-                print(f"  {urgency_icon} Category: {result.get('category')} | Urgency: {result.get('urgency')} | Dept: {result.get('department')} | Status: {status}{dup_tag}")
+                print(f"  {urgency_tag} Category: {result.get('category')} | Urgency: {result.get('urgency')} | Dept: {result.get('department')} | Status: {status}{dup_tag}")
 
             except Exception as e:
-                print(f"  ❌ ERROR processing complaint: {e}")
+                print(f"  [ERROR] processing complaint: {e}")
                 db.rollback()
                 continue
 
         final_count = db.query(Complaint).count()
+        final_steps = db.query(ResolutionStep).count()
+        final_timeline = db.query(ComplaintTimelineEntry).count()
         print(f"\n{'=' * 60}")
-        print(f"✅ Seeding complete. {final_count} complaints in database.")
+        print(f"Seeding complete. {final_count} complaints, {final_steps} steps, {final_timeline} timeline entries in database.")
 
     finally:
         db.close()

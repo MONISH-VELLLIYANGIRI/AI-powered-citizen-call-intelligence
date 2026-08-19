@@ -13,7 +13,7 @@ from app.graph.nodes import (
     emergency_fast_path_node,
     route_department_node,
     summarize_node,
-    advisory_node,
+    resolution_planner_node,
 )
 
 
@@ -44,7 +44,7 @@ def build_graph() -> StateGraph:
     graph.add_node("merge", merge_node)
     graph.add_node("route_department", route_department_node)
     graph.add_node("summarize", summarize_node)
-    graph.add_node("advisory", advisory_node)
+    graph.add_node("resolution_planner", resolution_planner_node)
 
     # Set entry point
     graph.set_entry_point("intake")
@@ -79,10 +79,10 @@ def build_graph() -> StateGraph:
     # Merge also continues to route_department
     graph.add_edge("merge", "route_department")
 
-    # After routing → summarize → advisory → END
+    # After routing → summarize → resolution_planner → END
     graph.add_edge("route_department", "summarize")
-    graph.add_edge("summarize", "advisory")
-    graph.add_edge("advisory", END)
+    graph.add_edge("summarize", "resolution_planner")
+    graph.add_edge("resolution_planner", END)
 
     return graph.compile()
 
@@ -118,6 +118,11 @@ def run_complaint_pipeline(transcript: str, citizen_location: str = None) -> Com
         "duplicate_of_id": None,
         "duplicate_confidence": None,
         "embedding": None,
+        "resolution_steps": None,
+        "department_contact_needed": None,
+        "draft_department_message": None,
+        "draft_citizen_ack": None,
+        "department_contact_info": None,
         "trace": [],
     }
 

@@ -66,6 +66,33 @@ Department: {department}
 Urgency: {urgency}"""
 
 
+RESOLUTION_PLANNER_SYSTEM = """You are a government operations resolution planner. Given a citizen's complaint, department, category, and urgency, produce a concrete, actionable resolution plan in JSON format.
+
+JSON Output Schema:
+{
+  "resolution_steps": [
+    {"step": "Actionable task description", "owner": "department" | "officer"}
+  ],
+  "department_contact_needed": true,
+  "draft_department_message": "Draft formal message to the department with issue details and location.",
+  "draft_citizen_ack": "Reassuring acknowledgment to the citizen mentioning the department handling the issue."
+}
+
+Rules:
+- Provide 2 to 4 distinct, sequential resolution steps with owner ("department" or "officer").
+- draft_department_message should be concise and actionable.
+- draft_citizen_ack should be clear, professional, and comforting to the citizen.
+- Respond with ONLY valid JSON, no markdown fences, no explanation text."""
+
+RESOLUTION_PLANNER_USER = """Complaint details:
+Category: {category}
+Department: {department}
+Urgency: {urgency}
+Location: {location}
+Transcript: {transcript}
+Summary: {summary}"""
+
+
 ADVISORY_SYSTEM = """You are a government operations advisor. Given a classified citizen complaint, suggest ONE concrete next action an officer should take.
 Keep it actionable, specific, and under 2 sentences.
 Respond with ONLY the advisory text, no JSON, no markdown, no quotes."""

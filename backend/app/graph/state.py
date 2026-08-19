@@ -14,4 +14,10 @@ class ComplaintState(TypedDict):
     duplicate_of_id: Optional[int]
     duplicate_confidence: Optional[float]
     embedding: Optional[List[float]]
+    # Resolution Planning
+    resolution_steps: Optional[List[Dict[str, str]]]
+    department_contact_needed: Optional[bool]
+    draft_department_message: Optional[str]
+    draft_citizen_ack: Optional[str]
+    department_contact_info: Optional[Dict[str, Any]]
     trace: List[Dict[str, Any]]  # append {"node": name, "output": {...}, "duration_ms": ...} at every step

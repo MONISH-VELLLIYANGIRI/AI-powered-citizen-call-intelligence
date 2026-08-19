@@ -24,10 +24,12 @@ def on_startup():
     create_tables()
 
 # Routers
-from app.routers import complaints, analytics, chatbot  # noqa: E402
+from app.routers import complaints, analytics, chatbot, citizen, officer  # noqa: E402
 app.include_router(complaints.router, prefix="/api/complaints", tags=["Complaints"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(chatbot.router, prefix="/api/chatbot", tags=["Chatbot"])
+app.include_router(citizen.router, prefix="/api/citizen", tags=["Citizen"])
+app.include_router(officer.router, prefix="/api/officer", tags=["Officer"])
 
 
 @app.get("/")

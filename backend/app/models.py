@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean
 from app.db import Base
 
 
@@ -38,3 +38,26 @@ class Complaint(Base):
 
     # Reasoning Trace (JSON-serialized list of {node, output, duration_ms})
     reasoning_trace = Column(Text, nullable=True)
+
+
+class ResolutionStep(Base):
+    __tablename__ = "resolution_steps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    complaint_id = Column(Integer, ForeignKey("complaints.id"), nullable=False, index=True)
+    step_text = Column(String, nullable=False)
+    owner = Column(String, default="officer")  # "department" | "officer"
+    status = Column(String, default="pending")  # "pending" | "done"
+    completed_at = Column(DateTime, nullable=True)
+
+
+class ComplaintTimelineEntry(Base):
+    __tablename__ = "complaint_timeline_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    complaint_id = Column(Integer, ForeignKey("complaints.id"), nullable=False, index=True)
+    actor = Column(String, default="system")  # "system" | "officer" | "citizen"
+    message = Column(Text, nullable=False)
+    visible_to_citizen = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+

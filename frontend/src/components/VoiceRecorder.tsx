@@ -14,17 +14,19 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
   const [liveTranscript, setLiveTranscript] = useState('')
   const [editableTranscript, setEditableTranscript] = useState('')
   const [secondsLeft, setSecondsLeft] = useState(MAX_RECORDING_SECONDS)
-  const [isProcessingChunk, setIsProcessingChunk] = useState(false)
+  const [, setIsProcessing] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
   const recorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const animFrameRef = useRef<number | null>(null)
+  const recognitionRef = useRef<any>(null)
+  const speechTranscriptRef = useRef<string>('')
+  const isRecordingRef = useRef<boolean>(false)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -34,18 +36,30 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
   }, [])
 
   const stopEverything = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current)
+    isRecordingRef.current = false
     if (countdownRef.current) clearInterval(countdownRef.current)
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      recorderRef.current.stop()
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null
+        recognitionRef.current.stop()
+      } catch {}
+      recognitionRef.current = null
     }
+
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      try {
+        recorderRef.current.stop()
+      } catch {}
+    }
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop())
     }
   }
 
-  // Draw simple audio level visualization
+  // Draw audio level visualization
   const drawVisualizer = useCallback(() => {
     const analyser = analyserRef.current
     const canvas = canvasRef.current
@@ -58,6 +72,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
     const dataArray = new Uint8Array(bufferLength)
 
     const draw = () => {
+      if (!isRecordingRef.current) return
       animFrameRef.current = requestAnimationFrame(draw)
       analyser.getByteFrequencyData(dataArray)
 
@@ -81,38 +96,19 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
     draw()
   }, [])
 
-  const processChunks = async () => {
-    if (chunksRef.current.length === 0) return
-
-    const chunkBlob = new Blob(chunksRef.current.splice(0), { type: 'audio/webm' })
-    if (chunkBlob.size < 100) return
-
-    setIsProcessingChunk(true)
-    try {
-      const result = await transcribeChunk(chunkBlob)
-      if (result.text && result.text.trim()) {
-        setLiveTranscript(prev => {
-          const updated = prev ? prev + ' ' + result.text.trim() : result.text.trim()
-          return updated
-        })
-      }
-    } catch {
-      // Skip failed chunk silently
-    } finally {
-      setIsProcessingChunk(false)
-    }
-  }
-
   const startRecording = async () => {
     setErrorMsg('')
     setLiveTranscript('')
+    speechTranscriptRef.current = ''
     setSecondsLeft(MAX_RECORDING_SECONDS)
+    chunksRef.current = []
+    isRecordingRef.current = true
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
 
-      // Set up audio analyser for visualization
+      // Set up audio analyser for visualizer
       const audioCtx = new AudioContext()
       const source = audioCtx.createMediaStreamSource(stream)
       const analyser = audioCtx.createAnalyser()
@@ -131,24 +127,55 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
 
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
       recorderRef.current = recorder
-      chunksRef.current = []
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
+        if (e.data && e.data.size > 0) {
           chunksRef.current.push(e.data)
         }
       }
 
-      // Start recording with timeslice for regular data events
-      recorder.start(1000) // Get data every 1 second
+      recorder.start(1000)
+
+      // Start Web Speech API for real-time live transcription if available
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition()
+          recognition.continuous = true
+          recognition.interimResults = true
+          recognition.lang = 'en-US'
+
+          recognition.onresult = (event: any) => {
+            let current = ''
+            for (let i = 0; i < event.results.length; i++) {
+              current += event.results[i][0].transcript
+            }
+            speechTranscriptRef.current = current
+            setLiveTranscript(current)
+          }
+
+          recognition.onerror = (event: any) => {
+            console.warn('Speech recognition error:', event.error)
+          }
+
+          recognition.onend = () => {
+            // Keep restarting recognition while recording state is active
+            if (isRecordingRef.current && recognitionRef.current) {
+              try {
+                recognition.start()
+              } catch {}
+            }
+          }
+
+          recognition.start()
+          recognitionRef.current = recognition
+        } catch (e) {
+          console.warn('Failed to start Web Speech API:', e)
+        }
+      }
 
       setState('recording')
       drawVisualizer()
-
-      // Send chunks for transcription every 4 seconds
-      intervalRef.current = setInterval(() => {
-        processChunks()
-      }, 4000)
 
       // Countdown timer
       let remaining = MAX_RECORDING_SECONDS
@@ -161,6 +188,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
       }, 1000)
 
     } catch (err: any) {
+      isRecordingRef.current = false
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setErrorMsg('Microphone access denied — you can still type your complaint below.')
       } else {
@@ -171,15 +199,26 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
   }
 
   const doStopRecording = async () => {
-    // Stop intervals
-    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+    isRecordingRef.current = false
+
     if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null }
     if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null }
+
+    // Stop Web Speech API
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null
+        recognitionRef.current.stop()
+      } catch {}
+      recognitionRef.current = null
+    }
 
     // Stop recorder
     const recorder = recorderRef.current
     if (recorder && recorder.state !== 'inactive') {
-      recorder.stop()
+      try {
+        recorder.stop()
+      } catch {}
     }
 
     // Stop mic stream
@@ -188,22 +227,35 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
     }
 
     setState('processing_final')
+    setIsProcessing(true)
 
-    // Process any remaining chunks
-    await new Promise(resolve => setTimeout(resolve, 500)) // Brief delay to collect final data
-    await processChunks()
+    // Brief delay to allow final ondataavailable to fire
+    await new Promise(resolve => setTimeout(resolve, 600))
 
-    // Move to review state with assembled transcript
-    setEditableTranscript(liveTranscript || '')
+    let finalTranscript = speechTranscriptRef.current.trim()
+
+    // If Web Speech API transcript is short or missing, process full audio recording with backend STT
+    if (!finalTranscript || finalTranscript.length < 5) {
+      if (chunksRef.current.length > 0) {
+        const fullAudioBlob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        if (fullAudioBlob.size > 200) {
+          try {
+            const sttResult = await transcribeChunk(fullAudioBlob)
+            if (sttResult.text && sttResult.text.trim()) {
+              finalTranscript = sttResult.text.trim()
+            }
+          } catch (e) {
+            console.error('Backend audio transcription error:', e)
+          }
+        }
+      }
+    }
+
+    setIsProcessing(false)
+    setLiveTranscript(finalTranscript)
+    setEditableTranscript(finalTranscript)
     setState('review')
   }
-
-  // Update editable transcript when liveTranscript changes and we're in processing_final
-  useEffect(() => {
-    if (state === 'review' || state === 'processing_final') {
-      setEditableTranscript(liveTranscript)
-    }
-  }, [liveTranscript, state])
 
   const handleConfirm = () => {
     if (editableTranscript.trim()) {
@@ -229,6 +281,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
         <button
           className="btn btn-secondary"
           onClick={startRecording}
+          type="button"
           style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center' }}
         >
           <span style={{ fontSize: '1.3rem' }}>🎙️</span>
@@ -240,7 +293,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
       {state === 'error' && (
         <div style={{ padding: '12px 16px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, color: '#991b1b', fontSize: '0.85rem' }}>
           {errorMsg}
-          <button className="btn btn-secondary btn-sm" onClick={handleCancel} style={{ marginTop: 8, display: 'block' }}>
+          <button className="btn btn-secondary btn-sm" type="button" onClick={handleCancel} style={{ marginTop: 8, display: 'block' }}>
             Dismiss
           </button>
         </div>
@@ -278,15 +331,11 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
                 <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Transcript (live)
                 </label>
-                {isProcessingChunk && (
-                  <div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
-                )}
               </div>
               <div style={{
                 minHeight: 60, padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0',
-                borderRadius: 8, fontSize: '0.9rem', color: '#334155', lineHeight: 1.6,
-                fontStyle: liveTranscript ? 'normal' : 'italic',
-                color: liveTranscript ? '#334155' : '#94a3b8',
+                borderRadius: 8, fontSize: '0.9rem', color: liveTranscript ? '#334155' : '#94a3b8',
+                lineHeight: 1.6, fontStyle: liveTranscript ? 'normal' : 'italic',
               }}>
                 {liveTranscript || 'Listening... speak your complaint clearly.'}
               </div>
@@ -294,6 +343,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
 
             <button
               className="btn btn-primary"
+              type="button"
               onClick={doStopRecording}
               style={{ width: '100%' }}
             >
@@ -306,9 +356,9 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
       {/* Processing final chunk */}
       {state === 'processing_final' && (
         <div className="card">
-          <div className="card-body loading-overlay" style={{ padding: '30px 20px' }}>
+          <div className="card-body loading-overlay" style={{ padding: '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
             <div className="spinner" />
-            Processing final audio...
+            <span>Transcribing full audio recording...</span>
           </div>
         </div>
       )}
@@ -338,13 +388,14 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 className="btn btn-primary"
+                type="button"
                 onClick={handleConfirm}
                 disabled={!editableTranscript.trim()}
                 style={{ flex: 1 }}
               >
                 ✅ Use This Transcript
               </button>
-              <button className="btn btn-secondary" onClick={handleCancel}>
+              <button className="btn btn-secondary" type="button" onClick={handleCancel}>
                 Cancel
               </button>
             </div>
@@ -362,3 +413,4 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
     </div>
   )
 }
+
