@@ -17,7 +17,7 @@ import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Badge, StatusBadge, UrgencyBadge } from '../components/ui/Badge'
-import { EmptyState, LoadingSkeleton } from '../components/ui/FeedbackStates'
+import { LoadingSkeleton } from '../components/ui/FeedbackStates'
 import { Timeline } from '../components/ui/Timeline'
 import VoiceRecorder from '../components/VoiceRecorder'
 import {
@@ -29,6 +29,7 @@ import {
   PlusCircle,
   FolderOpen,
   ArrowRight,
+  Shield,
 } from 'lucide-react'
 
 function CategoryIcon({ category }: { category?: string }) {
@@ -328,26 +329,22 @@ export default function CitizenPortal() {
       />
 
       {/* Main Tabs Navigation */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
-        <Button
-          variant={tab === 'new_complaint' ? 'primary' : 'secondary'}
-          size="sm"
-          icon={<PlusCircle size={15} />}
+      <div className="segmented-tabs">
+        <button
+          className={`segmented-tab ${tab === 'new_complaint' ? 'active' : ''}`}
           onClick={() => {
             setTab('new_complaint')
             setSelectedComplaintId(null)
           }}
         >
-          Register New Grievance
-        </Button>
-        <Button
-          variant={tab === 'my_complaints' ? 'primary' : 'secondary'}
-          size="sm"
-          icon={<FolderOpen size={15} />}
+          <PlusCircle size={18} /> Register New Grievance
+        </button>
+        <button
+          className={`segmented-tab ${tab === 'my_complaints' ? 'active' : ''}`}
           onClick={() => setTab('my_complaints')}
         >
-          My Cases & Live Tracking
-        </Button>
+          <FolderOpen size={18} /> My Cases & Live Tracking
+        </button>
       </div>
 
       <div className="workspace-grid-balanced">
@@ -700,13 +697,40 @@ export default function CitizenPortal() {
                   {loadingComplaints ? (
                     <LoadingSkeleton count={3} height={90} />
                   ) : myComplaints.length === 0 ? (
-                    <EmptyState
-                      icon="📂"
-                      title="No Grievances Found"
-                      description="You have not submitted any complaints under this email yet."
-                      actionLabel="Register Grievance"
-                      onAction={() => setTab('new_complaint')}
-                    />
+                    <div className="ui-empty-state">
+                      <FolderOpen className="ui-empty-icon" />
+                      <h3 className="ui-empty-title">No Grievances Yet</h3>
+                      <p className="ui-empty-description">
+                        You have not submitted any complaints under this identity. 
+                        To get started, register your first grievance to initialize the Autonomous AI Service Workflow.
+                      </p>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, margin: '24px 0 32px', color: '#64748B', fontSize: '13px', fontWeight: 500 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                          <div style={{ background: '#EFF6FF', color: '#2563EB', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><PlusCircle size={20} /></div>
+                          <span>Register</span>
+                        </div>
+                        <ArrowRight size={16} color="#CBD5E1" />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                          <div style={{ background: '#F5F3FF', color: '#7C3AED', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Bot size={20} /></div>
+                          <span>AI Processing</span>
+                        </div>
+                        <ArrowRight size={16} color="#CBD5E1" />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                          <div style={{ background: '#FFFBEB', color: '#F59E0B', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Shield size={20} /></div>
+                          <span>Verification</span>
+                        </div>
+                        <ArrowRight size={16} color="#CBD5E1" />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                          <div style={{ background: '#ECFDF5', color: '#10B981', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckCircle2 size={20} /></div>
+                          <span>Resolved</span>
+                        </div>
+                      </div>
+
+                      <Button variant="primary" size="lg" icon={<PlusCircle size={18} />} onClick={() => setTab('new_complaint')}>
+                        Register Your First Grievance
+                      </Button>
+                    </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {myComplaints.map(item => (

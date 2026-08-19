@@ -1,5 +1,6 @@
 import React from 'react'
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { LayoutDashboard, BarChart3, Users, LogOut, Zap, User, Briefcase, ShieldAlert, Clock, BrainCircuit } from 'lucide-react'
 import { RoleProvider, useRole, type Role } from './context/RoleContext'
 import LandingPage from './pages/LandingPage'
 import OfficerDashboard from './pages/OfficerDashboard'
@@ -51,7 +52,9 @@ function AppLayout() {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <h1>
-            <span className="brand-icon">⚡</span>
+            <span className="brand-icon">
+              <Zap size={20} color="#ffffff" />
+            </span>
             Call Intelligence
           </h1>
           <p>AI-Powered Citizen Services</p>
@@ -60,22 +63,43 @@ function AppLayout() {
         {/* Role-Filtered Navigation */}
         <nav className="sidebar-nav">
           {role === 'officer' && (
-            <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="nav-icon">📋</span>
-              Officer Dashboard
-            </NavLink>
+            <>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', margin: '16px 12px 8px', letterSpacing: '0.05em' }}>WORKSPACE</div>
+              <NavLink to="/dashboard" end className={({ isActive }) => (isActive ? 'active' : '')}>
+                <span className="nav-icon"><LayoutDashboard size={18} /></span>
+                Officer Workspace
+              </NavLink>
+
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', margin: '24px 12px 8px', letterSpacing: '0.05em' }}>CASE MANAGEMENT</div>
+              <NavLink to="/dashboard/timeline" className={({ isActive }) => (isActive ? 'active' : '')}>
+                <span className="nav-icon"><Clock size={18} /></span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span>Citizen Timeline</span>
+                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>Live updates & logs</span>
+                </div>
+              </NavLink>
+
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', margin: '24px 12px 8px', letterSpacing: '0.05em' }}>✨ AI INTELLIGENCE</div>
+              <NavLink to="/dashboard/audit" className={({ isActive }) => (isActive ? 'active' : '')}>
+                <span className="nav-icon"><BrainCircuit size={18} /></span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span>AI Audit Trail</span>
+                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>Agent processing details</span>
+                </div>
+              </NavLink>
+            </>
           )}
 
           {role === 'admin' && (
             <NavLink to="/analytics" className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="nav-icon">📊</span>
+              <span className="nav-icon"><BarChart3 size={18} /></span>
               Admin Analytics
             </NavLink>
           )}
 
           {role === 'citizen' && (
             <NavLink to="/citizen" className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="nav-icon">🏛️</span>
+              <span className="nav-icon"><Users size={18} /></span>
               Citizen Portal
             </NavLink>
           )}
@@ -84,8 +108,8 @@ function AppLayout() {
         {/* Active Role Profile & Switch Role Footer */}
         <div className="sidebar-profile-footer">
           <div className="profile-badge-card">
-            <div className="profile-avatar">
-              {role === 'citizen' ? '👤' : role === 'officer' ? '👮' : '📊'}
+            <div className="profile-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+              {role === 'citizen' ? <User size={20} /> : role === 'officer' ? <Briefcase size={20} /> : <ShieldAlert size={20} />}
             </div>
             <div className="profile-info">
               <span className="profile-name">{name || 'User'}</span>
@@ -105,7 +129,7 @@ function AppLayout() {
             onClick={handleSwitchRole}
             title="Switch Persona / Log Out"
           >
-            🔄 Switch Role
+            <LogOut size={14} /> Switch Role
           </button>
 
           <div className="sidebar-hackathon-credit">
@@ -120,7 +144,7 @@ function AppLayout() {
         <Routes>
           <Route path="/" element={<Navigate to={role === 'citizen' ? '/citizen' : role === 'admin' ? '/analytics' : '/dashboard'} replace />} />
           <Route
-            path="/dashboard"
+            path="/dashboard/*"
             element={
               <RoleProtectedRoute allowedRoles={['officer']}>
                 <OfficerDashboard />

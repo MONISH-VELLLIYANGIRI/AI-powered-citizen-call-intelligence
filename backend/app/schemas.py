@@ -68,6 +68,17 @@ class ResolutionDraftResponse(BaseModel):
     draft_closure_message: Optional[str] = None
 
 
+class TraceStep(BaseModel):
+    node: str
+    agent_name: Optional[str] = None
+    action_summary: Optional[str] = None
+    timestamp: Optional[str] = None
+    status: Optional[str] = "completed"
+    output: Dict[str, Any]
+    duration_ms: Optional[float] = None
+    fallback_used: Optional[bool] = False
+
+
 class CitizenComplaintDetail(BaseModel):
     id: int
     category: Optional[str] = None
@@ -94,17 +105,6 @@ class OfficerQueueItem(BaseModel):
     department_confidence: Optional[float] = None
     total_steps: int = 0
     completed_steps: int = 0
-
-
-class TraceStep(BaseModel):
-    node: str
-    agent_name: Optional[str] = None
-    action_summary: Optional[str] = None
-    timestamp: Optional[str] = None
-    status: Optional[str] = "completed"
-    output: Dict[str, Any]
-    duration_ms: Optional[float] = None
-    fallback_used: Optional[bool] = False
 
 
 class ComplaintAuditLogResponse(BaseModel):

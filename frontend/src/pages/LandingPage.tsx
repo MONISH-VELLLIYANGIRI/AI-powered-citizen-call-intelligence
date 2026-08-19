@@ -63,7 +63,7 @@ export default function LandingPage() {
       <header className="landing-header">
         <div className="landing-brand-badge">
           <div className="landing-brand-icon">
-            <Zap size={24} color="#ffffff" />
+            <Zap size={36} color="#ffffff" />
           </div>
           <div className="landing-brand-text">
             <h1>Call Intelligence</h1>
@@ -71,29 +71,29 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="landing-demo-pill">
-          <span className="demo-dot" /> Demo Role Selection Gate
+          <span className="demo-dot" /> Live Hackathon Demo
         </div>
         <p className="landing-subheading">
-          Select a role below to explore autonomous routing, multi-agent remediation, and analytics workflows.
+          Enter as a Citizen, Case Officer, or Admin to explore end-to-end voice intake, autonomous routing, and municipal analytics.
         </p>
       </header>
 
       {/* 3 Role Selection Cards */}
       <div className="landing-cards-grid">
         {/* Role 1: Citizen Portal */}
-        <div className="role-card">
+        <div className="role-card citizen-card">
           <div className="role-card-header">
             <div className="role-icon-box citizen-accent">
-              <Building2 size={22} color="#2563eb" />
+              <Building2 size={28} />
             </div>
             <div>
               <h3>Citizen Portal</h3>
-              <Badge variant="info" size="sm">Public Access</Badge>
+              <Badge variant="info" size="sm">Public Workspace</Badge>
             </div>
           </div>
 
           <p className="role-description">
-            Register grievances with voice or text, track resolution milestones, and receive instant AI agent updates.
+            Register grievances via voice or text, monitor live milestones, and receive instant AI agent follow-ups.
           </p>
 
           <div className="role-form">
@@ -104,7 +104,7 @@ export default function LandingPage() {
               placeholder="e.g., Monish V"
             />
             <Input
-              label="Email ID (for tracking & SMS)"
+              label="Email ID (for tracking)"
               type="email"
               value={citizenEmail}
               onChange={e => setCitizenEmail(e.target.value)}
@@ -117,24 +117,24 @@ export default function LandingPage() {
             className="btn-role-action"
             onClick={() => handleSelectRole('citizen')}
           >
-            Continue as Citizen <ArrowRight size={16} />
+            Enter as Citizen <ArrowRight size={18} />
           </Button>
         </div>
 
         {/* Role 2: Officer Dashboard */}
-        <div className="role-card featured-role">
+        <div className="role-card officer-card">
           <div className="role-card-header">
             <div className="role-icon-box officer-accent">
-              <ClipboardList size={22} color="#16a34a" />
+              <ClipboardList size={28} />
             </div>
             <div>
               <h3>Officer Dashboard</h3>
-              <Badge variant="success" size="sm">Operational</Badge>
+              <Badge variant="success" size="sm">Operational Queue</Badge>
             </div>
           </div>
 
           <p className="role-description">
-            Review triaged queue, execute resolution checklists, run autonomous agents, and inspect audit reasoning traces.
+            Review triaged cases, execute resolution steps, dispatch crews, and inspect AI routing reasoning.
           </p>
 
           <div className="role-form">
@@ -156,25 +156,26 @@ export default function LandingPage() {
             variant="primary"
             className="btn-role-action"
             onClick={() => handleSelectRole('officer')}
+            style={{ backgroundColor: '#10B981', borderColor: '#10B981' }}
           >
-            Continue as Officer <ArrowRight size={16} />
+            Enter as Officer <ArrowRight size={18} />
           </Button>
         </div>
 
         {/* Role 3: Admin Analytics */}
-        <div className="role-card">
+        <div className="role-card admin-card">
           <div className="role-card-header">
             <div className="role-icon-box admin-accent">
-              <BarChart3 size={22} color="#8b5cf6" />
+              <BarChart3 size={28} />
             </div>
             <div>
               <h3>Admin Analytics</h3>
-              <Badge variant="neutral" size="sm">Executive</Badge>
+              <Badge variant="neutral" size="sm">Executive Telemetry</Badge>
             </div>
           </div>
 
           <p className="role-description">
-            Monitor city-wide grievance volumes, department SLA performance, and geospatial incident hotspot analytics.
+            Monitor real-time city grievance metrics, department SLA performance, and incident hotspots.
           </p>
 
           <div className="role-form">
@@ -189,7 +190,7 @@ export default function LandingPage() {
               type="password"
               value={adminPasscode}
               onChange={e => setAdminPasscode(e.target.value)}
-              placeholder="Optional demo gate"
+              placeholder="Leave blank for demo"
             />
           </div>
 
@@ -197,15 +198,16 @@ export default function LandingPage() {
             variant="primary"
             className="btn-role-action"
             onClick={() => handleSelectRole('admin')}
+            style={{ backgroundColor: '#7C3AED', borderColor: '#7C3AED' }}
           >
-            Continue as Admin <ArrowRight size={16} />
+            Enter as Admin <ArrowRight size={18} />
           </Button>
         </div>
       </div>
 
       {/* Footer info */}
       <footer className="landing-footer">
-        <span>Hexaware Mavericks Hackathon • Track 2 — AI Citizen Intelligence</span>
+        <span>Hexaware Mavericks Hackathon • AI-Powered Citizen Intelligence</span>
       </footer>
     </div>
   )
