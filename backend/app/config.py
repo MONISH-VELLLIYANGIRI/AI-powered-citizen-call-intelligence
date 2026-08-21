@@ -17,4 +17,15 @@ NAVIGATE_TTS_MODEL = os.environ.get("NAVIGATE_TTS_MODEL", "gpt-4o-mini-tts")
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{_project_root / 'complaints.db'}")
 
 # App
-CORS_ORIGINS = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]
+# App
+CORS_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+]
+
+# Add production frontend URL if available
+FRONTEND_URL = os.environ.get("FRONTEND_URL")
+
+if FRONTEND_URL:
+    CORS_ORIGINS.append(FRONTEND_URL)

@@ -180,8 +180,18 @@ export default function AdminAnalytics() {
                     cursor={{ fill: '#F1F5F9' }}
                     contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', boxShadow: '0 12px 32px rgba(15,23,42,0.1)', fontSize: 14, fontWeight: 600, color: '#0F172A', padding: '12px 16px' }}
                     itemStyle={{ color: '#334155', fontWeight: 700 }}
-                    formatter={(value: number) => [`${value} Issues`, 'Volume']}
-                    labelFormatter={(label: string) => <span style={{ color: '#64748B', textTransform: 'capitalize', fontSize: '12px', display: 'block', marginBottom: '4px' }}>{label} Department</span>}
+                    formatter={(value) => [`${value ?? 0} Issues`, 'Volume']}
+                    labelFormatter={(label) => (
+  <span style={{ 
+    color: '#64748B', 
+    textTransform: 'capitalize', 
+    fontSize: '12px', 
+    display: 'block', 
+    marginBottom: '4px' 
+  }}>
+    {String(label ?? '')} Department
+  </span>
+)}
                   />
                   <Bar dataKey="value" radius={[8, 8, 8, 8]} maxBarSize={60}>
                     {categoryData.map((entry) => (
@@ -242,7 +252,7 @@ export default function AdminAnalytics() {
                       <Tooltip
                         contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', boxShadow: '0 12px 32px rgba(15,23,42,0.1)', fontSize: 15, fontWeight: 700, color: '#0F172A', padding: '10px 16px' }}
                         itemStyle={{ color: '#0F172A' }}
-                        formatter={(value: number) => [`${value} cases`]}
+                        formatter={(value) => [`${value ?? 0} cases`]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -313,7 +323,16 @@ export default function AdminAnalytics() {
                   cursor={{ stroke: '#7C3AED', strokeWidth: 1, strokeDasharray: '4 4' }}
                   contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', boxShadow: '0 12px 32px rgba(15,23,42,0.1)', fontSize: 14, fontWeight: 600, color: '#0F172A', padding: '12px 16px' }}
                   itemStyle={{ color: '#334155', fontWeight: 700 }}
-                  labelFormatter={(label: string) => <span style={{ color: '#64748B', fontSize: '12px', display: 'block', marginBottom: '4px' }}>{label}</span>}
+                  labelFormatter={(label) => (
+  <span style={{ 
+    color: '#64748B', 
+    fontSize: '12px', 
+    display: 'block', 
+    marginBottom: '4px' 
+  }}>
+    {String(label ?? '')}
+  </span>
+)}
                 />
                 <Area
                   type="monotone"
